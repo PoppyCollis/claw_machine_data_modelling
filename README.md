@@ -8,6 +8,9 @@ by the entropy of the Gibb's posterior.
 * Rewards can differ between categories and are applied on success only.
 * The agent maximises **expected exponential utility**
 
+![Bayesian decision-making process](assets/gaussians.png)
+
+
 
 In __main__ section of decision_maker.py:
 

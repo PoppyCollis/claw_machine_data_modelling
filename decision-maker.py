@@ -1,12 +1,3 @@
-"""
-* `choose(pair)`:
-    1. calls `posterior(pair)` to obtain a dict {id: prob}
-    2. if `self.soft`: sample choice from that posterior
-       else:           take MAP choice (arg‑max)
-    3. computes confidence = –entropy(posterior)
-    4. returns (choice, confidence)
-* `posterior(pair)` centralises the expected‑utility ➜ normalised‑prob computation.
-"""
 
 from __future__ import annotations
 from dataclasses import dataclass
@@ -15,7 +6,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import random
-
+from utils import *
 
 def gaussian_cdf(t: float, mu: float, sigma: float) -> float:
     """Cumulative distribution Φ((t‑μ)/σ) using math.erf.
@@ -134,6 +125,11 @@ class DecisionAgent:
     
     
 if __name__ == "__main__": 
+    
+    # ------------------------------------------------------------------
+    #  Model parameters
+    # ------------------------------------------------------------------
+    
     cats = {
         "narrow_low": GaussianCategory(mu=0.22, sigma=0.02),
         "wide_low": GaussianCategory(mu=0.22, sigma=0.06),
@@ -147,11 +143,62 @@ if __name__ == "__main__":
         "wide_high": (18.0, 0.0),
     }
 
+
+    
+    threshold = 0.31
+    first_pair = ("wide_low", "wide_high")
+
+    # ------------------------------------------------------------------
+    #  Agents
+    # ------------------------------------------------------------------
+
     agent_det = DecisionAgent(cats, rewards, threshold=0.31, beta=1.0, soft=False)
     agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=1.0, soft=True)
+    
+    # ------------------------------------------------------------------
+    #  Produce plots
+    # ------------------------------------------------------------------
+    fig, axs = plt.subplots(2, 2, figsize=(10, 7))
+    plot_all_gaussians(
+        {k: (v.mu, v.sigma) for k, v in cats.items()},
+        highlight_pair=first_pair,
+        ax=axs[0, 0],
+    )
+    plot_pair_with_threshold(
+        {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
+        threshold,
+        ax=axs[0, 1],
+    )
+    plot_success_bernoulli(
+        {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
+        threshold,
+        ax=axs[1, 0],
+    )
+    plot_reward_bernoulli(
+        {
+            "Yellow (wide_low)":  (0.22, 0.06, 11),
+            "Blue (wide_high)":   (0.30, 0.06, 18),
+        },
+        threshold,
+        ax=axs[1, 1],
+    )
+    plt.tight_layout()
+    plt.show()
 
-    for pair in [("wide_low", "wide_high"), ("narrow_low", "narrow_high")]:
+    # ------------------------------------------------------------------
+    #  Run two example trials
+    # ------------------------------------------------------------------
+    for pair in [first_pair, ("narrow_low", "narrow_high")]:
         ch_det, conf_det = agent_det.choose(pair)
         ch_soft, conf_soft = agent_soft.choose(pair)
-        print(f"{pair}: MAP→{ch_det} (conf={conf_det:+.3f}), "
-              f"sample→{ch_soft} (conf={conf_soft:+.3f})")
+        print(
+            f"{pair}: MAP→{ch_det} (conf={conf_det:+.3f})   "
+            f"sample→{ch_soft} (conf={conf_soft:+.3f})"
+        )
+
+
+    # for pair in [("wide_low", "wide_high"), ("narrow_low", "narrow_high")]:
+    #     ch_det, conf_det = agent_det.choose(pair)
+    #     ch_soft, conf_soft = agent_soft.choose(pair)
+    #     print(f"{pair}: MAP→{ch_det} (conf={conf_det:+.3f}), "
+    #           f"sample→{ch_soft} (conf={conf_soft:+.3f})")
