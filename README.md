@@ -8,15 +8,21 @@ by the entropy of the Gibb's posterior.
 * Rewards can differ between categories and are applied on success only.
 * The agent maximises **expected exponential utility**
 
+$$
+\operatorname{EU}(c)=
+ P_{\text{succ}}(c)\,e^{\beta w_c}
+ + (1-P_{\text{succ}}(c))\,e^{\beta w_{\text{fail}}}
+$$
+
 In __main__ section of decision_maker.py:
 
     - Adjust parameters of the ball distributions via "cats" dictionary
     - Adjust rewards of the ball distributions via "rews" dictionary
     - Provide pairs to evaluate via list of tuples called "pairs"
     - When initialising the agent we need:
-        - Threshold
-        - beta (inverse temperature) parameter
-        - soft: if soft = False, then we do a MAP decision rule, otherwise soft sampling of the catgeory
+        - Threshold, $$T$$
+        - Inverse temperature parameter, \beta$
+        - Decision-rule flag: if soft = False, then we do a MAP decision rule, otherwise soft sampling of the catgeory
 
 * `soft=True` makes the agent **sample** from the posterior over actions.  
   Set `soft=False` for the deterministic MAP choice.
