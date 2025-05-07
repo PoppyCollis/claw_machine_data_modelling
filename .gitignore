@@ -1,0 +1,5 @@
+# Ignore Spyder project settings
+.spyproject/
+
+# Egg Info
+*.egg-info/
