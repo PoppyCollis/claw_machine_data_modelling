@@ -103,7 +103,7 @@ def plot_success_bernoulli(
     probs = {cid: p / total for cid, p in p_succ.items()}
 
     ax.bar(probs.keys(), probs.values(),
-       color=[COLOR_MAP[c] for c in probs])
+       color=[COLOR_MAP[c] for c in probs], alpha=0.35)
 
     ax.set_ylim(0, 1)
     ax.set(ylabel="Probability", title="Posterior probability P(success|c)")
@@ -131,7 +131,7 @@ def plot_reward_bernoulli(
     probs = {cid: v / total for cid, v in exp_r.items()}
 
     ax.bar(probs.keys(), probs.values(),
-       color=[COLOR_MAP.get(c.split()[1], "grey") for c in probs])
+       color=[COLOR_MAP.get(c, "grey") for c in probs])
     ax.set_ylim(0, 1)
     ax.set(
         ylabel="Probability",

@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     
     threshold = 0.31
-    first_pair = ("wide_low", "wide_high")
+    first_pair = ("wide_low", "narrow_high")
 
     # ------------------------------------------------------------------
     #  Agents
@@ -176,8 +176,8 @@ if __name__ == "__main__":
     )
     plot_reward_bernoulli(
         {
-            "Yellow (wide_low)":  (0.22, 0.06, 11),
-            "Blue (wide_high)":   (0.30, 0.06, 18),
+            "wide_low":  (0.22, 0.06, 11),
+            "narrow_high":   (0.30, 0.06, 18),
         },
         threshold,
         ax=axs[1, 1],
