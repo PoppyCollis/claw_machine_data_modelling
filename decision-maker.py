@@ -84,7 +84,7 @@ class DecisionAgent:
         else:
             choice = max(post, key=post.get)  # MAP
 
-        confidence = self._neg_entropy(post)
+        confidence = self._confidence(post)
         
         return choice, confidence
     
@@ -132,8 +132,14 @@ class DecisionAgent:
     
         # C: bar‐plot Bernoulli of raw success-prob:
         #    pass post directly—no recomputation!
+        
+        # calculate confidence and print in title of final plot
+        confidence  = self._confidence(post)
+
+        
         plot_bar_from_probs(
             probs=post,
+            c=confidence,
             ax=axes[2])
 
         plt.tight_layout()
@@ -158,6 +164,19 @@ class DecisionAgent:
     def _neg_entropy(posterior: Dict[str, float]) -> float:
         """Return –∑ p log p  (≥ 0 when some probabilities >1, ≤ 0 otherwise)."""
         return sum(p * math.log(p) for p in posterior.values() if p > 0.0)
+    
+    def _confidence(self, posterior: Dict[str, float]) -> float:
+        """
+        Normalised confidence in [0,1]:
+        1 when the posterior is a delta (min entropy),
+        0 when it's uniform (max entropy).
+        """
+        # 1) raw negative-entropy = sum p log p
+        ne = sum(p * math.log(p) for p in posterior.values() if p > 0.0)
+        # 2) maximum entropy (nats) for N equally-likely outcomes
+        H_max = math.log(len(posterior))
+        # 3) normalise: 1 + ne/H_max
+        return 1.0 + ne / H_max
 
     def _sample_from(self, posterior: Dict[str, float]) -> str:
         """Draw key according to its probability weight."""
@@ -192,16 +211,18 @@ if __name__ == "__main__":
 
     
     threshold = 0.31
-    first_pair = ("wide_high", "narrow_low")
+    first_pair = ("wide_low", "narrow_high")
 
     # ------------------------------------------------------------------
     #  Agents
     # ------------------------------------------------------------------
 
-    agent_det = DecisionAgent(cats, rewards, threshold=0.31, beta=0.1, soft=False, verbose=True)
+    agent_det = DecisionAgent(cats, rewards, threshold=0.31, beta=0.5, soft=False, verbose=True)
     # agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=10, soft=True, verbose=True)
     
     ch_det, conf_det = agent_det.choose(first_pair)
+    
+    
 
     
     # ------------------------------------------------------------------
