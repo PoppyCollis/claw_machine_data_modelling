@@ -30,6 +30,7 @@ class GaussianCategory:
 
 
 class DecisionAgent:
+    
     """Chooses between categories by maximising expected utility.
 
     Parameters
@@ -59,6 +60,7 @@ class DecisionAgent:
         beta: float = 1.0,
         soft: bool = False,
         rng: random.Random | None = None,
+        verbose: bool = False,
     ):
         self.categories = categories
         self.rewards = rewards or {}
@@ -66,11 +68,16 @@ class DecisionAgent:
         self.beta = beta
         self.soft = soft
         self.rng = rng or random.Random()
+        self.verbose = verbose
 
 
     def choose(self, pair: Sequence[str]) -> Tuple[str, float]:
         """Return (choice, confidence = –entropy(posterior))."""
         post = self.posterior(pair)  # full posterior over the two actions
+        
+        if self.verbose:
+            self.visualize_pair(pair)
+
 
         if self.soft:
             choice = self._sample_from(post)
@@ -78,6 +85,7 @@ class DecisionAgent:
             choice = max(post, key=post.get)  # MAP
 
         confidence = self._neg_entropy(post)
+        
         return choice, confidence
     
     def posterior(self, pair: Sequence[str]) -> Dict[str, float]:
@@ -92,6 +100,44 @@ class DecisionAgent:
             return {cid: 1.0 / len(pair) for cid in pair}
 
         return {cid: u / total for cid, u in util.items()}
+    
+    def visualize_pair(self, pair: Sequence[str]) -> None:
+        """
+        1) Overplot all 4 gaussians in grey;
+        2) Highlight the two in `pair` (yellow / blue).
+        3) Shade their success‐regions under the curves.
+        4) Bar‐plot the renormalised P(success) Bernoulli.
+        """
+        # 1. Grab the full categories dict:
+        cat_params = {cid: (c.mu, c.sigma) for cid, c in self.categories.items()}
+        # 2. Posterior of raw success-prob (no reward):
+        post = self.posterior(pair)
+        # 3. Call your existing plotting functions—but pass them only
+        #    the raw CDF probabilities and colours:
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    
+        # A: all four in grey, highlight pair
+        plot_all_gaussians(
+            cat_params,
+            highlight_pair=pair,
+            ax=axes[0])
+    
+        # B: plot pair with shaded success region:
+        pair_params = {cid: cat_params[cid] for cid in pair}
+        
+        plot_pair_with_threshold(
+            pair_params,
+            threshold=self.T,
+            ax=axes[1])
+    
+        # C: bar‐plot Bernoulli of raw success-prob:
+        #    pass post directly—no recomputation!
+        plot_bar_from_probs(
+            probs=post,
+            ax=axes[2])
+
+        plt.tight_layout()
+        plt.show()
 
 
     def _expected_utility(self, cid: int) -> float:
@@ -146,55 +192,67 @@ if __name__ == "__main__":
 
     
     threshold = 0.31
-    first_pair = ("wide_low", "narrow_high")
+    first_pair = ("wide_high", "narrow_low")
 
     # ------------------------------------------------------------------
     #  Agents
     # ------------------------------------------------------------------
 
-    agent_det = DecisionAgent(cats, rewards, threshold=0.31, beta=1.0, soft=False)
-    agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=1.0, soft=True)
+    agent_det = DecisionAgent(cats, rewards, threshold=0.31, beta=0.1, soft=False, verbose=True)
+    # agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=10, soft=True, verbose=True)
+    
+    ch_det, conf_det = agent_det.choose(first_pair)
+
     
     # ------------------------------------------------------------------
     #  Produce plots
     # ------------------------------------------------------------------
-    fig, axs = plt.subplots(2, 2, figsize=(10, 7))
-    plot_all_gaussians(
-        {k: (v.mu, v.sigma) for k, v in cats.items()},
-        highlight_pair=first_pair,
-        ax=axs[0, 0],
-    )
-    plot_pair_with_threshold(
-        {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
-        threshold,
-        ax=axs[0, 1],
-    )
-    plot_success_bernoulli(
-        {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
-        threshold,
-        ax=axs[1, 0],
-    )
-    plot_reward_bernoulli(
-        {
-            "wide_low":  (0.22, 0.06, 11),
-            "narrow_high":   (0.30, 0.06, 18),
-        },
-        threshold,
-        ax=axs[1, 1],
-    )
-    plt.tight_layout()
-    plt.show()
+    # fig, axs = plt.subplots(2, 2, figsize=(10, 7))
+    # plot_all_gaussians(
+    #     {k: (v.mu, v.sigma) for k, v in cats.items()},
+    #     highlight_pair=first_pair,
+    #     ax=axs[0, 0],
+    # )
+    # plot_pair_with_threshold(
+    #     {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
+    #     threshold,
+    #     ax=axs[0, 1],
+    # )
+    # plot_success_bernoulli(
+    #     {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
+    #     threshold,
+    #     ax=axs[1, 0],
+    # )
+    # plot_reward_bernoulli(
+    #     {
+    #         "wide_low":  (0.22, 0.06, 11),
+    #         "narrow_high":   (0.30, 0.06, 18),
+    #     },
+    #     threshold,
+    #     {
+    #         "wide_low":  (0.22, 0.06, 11),
+    #         "narrow_high":   (0.30, 0.06, 18),
+    #     },
+    #     threshold,
+    #     ax=axs[1, 1],
+    # )
+    # plt.tight_layout()
+    # plt.show()
+    #     ax=axs[1, 1],
+    # )
+    # plt.tight_layout()
+    # plt.show()
 
     # ------------------------------------------------------------------
     #  Run two example trials
     # ------------------------------------------------------------------
-    for pair in [first_pair, ("narrow_low", "narrow_high")]:
-        ch_det, conf_det = agent_det.choose(pair)
-        ch_soft, conf_soft = agent_soft.choose(pair)
-        print(
-            f"{pair}: MAP→{ch_det} (conf={conf_det:+.3f})   "
-            f"sample→{ch_soft} (conf={conf_soft:+.3f})"
-        )
+    # for pair in [first_pair, ("narrow_low", "narrow_high")]:
+    #     ch_det, conf_det = agent_det.choose(pair)
+    #     ch_soft, conf_soft = agent_soft.choose(pair)
+    #     # print(
+        #     f"{pair}: MAP→{ch_det} (conf={conf_det:+.3f})"
+        #     f"sample→{ch_soft} (conf={conf_soft:+.3f})"
+        # )
 
 
     # for pair in [("wide_low", "wide_high"), ("narrow_low", "narrow_high")]:

@@ -27,10 +27,10 @@ def _gaussian_cdf(t: float, mu: float, sigma: float) -> float:
 # ---------------------------------------------------------------------
 
 COLOR_MAP = {
-    "narrow_low":  "yellow",
-    "wide_low":    "blue",
+    "narrow_low":  "blue",
+    "wide_low":    "green",
     "narrow_high": "red",
-    "wide_high":   "green",
+    "wide_high":   "yellow",
 }
 
 
@@ -108,10 +108,67 @@ def plot_success_bernoulli(
     ax.set_ylim(0, 1)
     ax.set(ylabel="Probability", title="Posterior probability P(success|c)")
     for cid, p in probs.items():
-        ax.text(cid, p + 0.02, f"{p:.2f}", ha="center")
+        ax.text(cid, p + 0.02, f"{p:.2f}", ha="center") 
     return ax
 
 
+def plot_bar_from_probs(
+    probs: Dict[str, float],
+    ax: Optional[plt.Axes] = None,
+    color_map: Optional[Dict[str, str]] = None,
+    title: Optional[str] = None,
+    alpha: float = 0.35,
+    ) -> plt.Axes:
+    """
+    Plot a bar chart of a discrete distribution, with per-label colours.
+
+    Parameters
+    ----------
+    probs : Dict[str, float]
+        Mapping from category ID to probability. Values need not sum to 1.
+    ax : plt.Axes, optional
+        Axes on which to draw. If None, uses plt.gca().
+    color_map : Dict[str,str], optional
+        Mapping from category ID to a matplotlib-compatible color string.
+        Defaults to the module-level COLOR_MAP.
+    title : str, optional
+        Title for the plot.
+    alpha : float, default=1.0
+        Opacity for the bars (0 transparent → 1 opaque).
+
+    Returns
+    -------
+    ax : plt.Axes
+        The Axes containing the bar chart.
+    """
+    ax = ax or plt.gca()
+    color_map = color_map or COLOR_MAP
+
+    labels = list(probs.keys())
+    values = [probs[l] for l in labels]
+
+    # look up each label’s colour (or grey if missing)
+    colors = [color_map.get(l, "grey") for l in labels]
+
+    bars = ax.bar(labels, values, color=colors, alpha=alpha)
+
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Probability")
+    ax.set_title(title or "Reward-weighted probabilities")
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=15)
+
+    # annotate each bar
+    for bar, val in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            val + 0.02,
+            f"{val:.2f}",
+            ha="center",
+            va="bottom",
+        )
+
+    return ax
 # ---------------------------------------------------------------------
 #  4.  Bernoulli from expected reward
 # ---------------------------------------------------------------------
