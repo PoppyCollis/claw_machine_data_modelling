@@ -222,47 +222,6 @@ if __name__ == "__main__":
     
     ch_det, conf_det = agent_det.choose(first_pair)
     
-    
-
-    
-    # ------------------------------------------------------------------
-    #  Produce plots
-    # ------------------------------------------------------------------
-    # fig, axs = plt.subplots(2, 2, figsize=(10, 7))
-    # plot_all_gaussians(
-    #     {k: (v.mu, v.sigma) for k, v in cats.items()},
-    #     highlight_pair=first_pair,
-    #     ax=axs[0, 0],
-    # )
-    # plot_pair_with_threshold(
-    #     {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
-    #     threshold,
-    #     ax=axs[0, 1],
-    # )
-    # plot_success_bernoulli(
-    #     {k: (cats[k].mu, cats[k].sigma) for k in first_pair},
-    #     threshold,
-    #     ax=axs[1, 0],
-    # )
-    # plot_reward_bernoulli(
-    #     {
-    #         "wide_low":  (0.22, 0.06, 11),
-    #         "narrow_high":   (0.30, 0.06, 18),
-    #     },
-    #     threshold,
-    #     {
-    #         "wide_low":  (0.22, 0.06, 11),
-    #         "narrow_high":   (0.30, 0.06, 18),
-    #     },
-    #     threshold,
-    #     ax=axs[1, 1],
-    # )
-    # plt.tight_layout()
-    # plt.show()
-    #     ax=axs[1, 1],
-    # )
-    # plt.tight_layout()
-    # plt.show()
 
     # ------------------------------------------------------------------
     #  Run two example trials
