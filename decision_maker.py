@@ -58,7 +58,8 @@ class DecisionAgent:
         rewards: Dict[int, Tuple[float, float]] | None = None,
         model: str="entropy", 
         threshold: float = 0.0,
-        beta: float = 1.0,
+        beta: float = 1.0, # reward inverse temperature
+        alpha: float = 1.0,      # perceptual inverse‐temperature
         soft: bool = False,
         rng: random.Random | None = None,
         verbose: bool = False,
@@ -72,6 +73,7 @@ class DecisionAgent:
         self.model=model
         self.T = threshold
         self.beta = beta
+        self.alpha = alpha
         self.soft = soft
         self.rng = rng or random.Random()
         self.verbose = verbose
@@ -161,25 +163,18 @@ class DecisionAgent:
 
 
     def _expected_utility(self, cid: int) -> float:
-        cat = self.categories[cid]  
-        p_succ = cat.success_prob(self.T) # compute prob of success via cdf
-        w_succ, w_fail = self.rewards.get(cid, (1.0, 0.0)) # get the rewards
+        cat = self.categories[cid]
+        raw_p = cat.success_prob(self.T)
         
-        if self.beta == 0.0:
-            # risk‑neutral: ordinary expected reward
-            return p_succ * w_succ + (1.0 - p_succ) * w_fail
+        # 1) temper the perceptual likelihood
+        p_succ = self._tempered_prob(raw_p)
+        p_fail = 1.0 - p_succ
 
-        # risk‑sensitive: expected exp‑utility
+        # 2) get reward weights
+        w_succ, w_fail = self.rewards.get(cid, (1.0, 0.0))
 
-        # return p_succ * math.exp(self.beta * w_succ) + (1.0 - p_succ) * math.exp(
-        #     self.beta * w_fail
-        # ) ### poppy original
-        
-        # return p_succ * math.exp(self.beta * np.log(w_succ)) + (1.0 - p_succ) * math.exp(
-        #     self.beta * np.log(w_fail)
-        # )
-    
-        return p_succ * (w_succ**self.beta) + (1.0 - p_succ) * (w_fail**self.beta)
+        # 3) combine with reward-shaping β exactly as before
+        return p_succ * (w_succ ** self.beta) + p_fail * (w_fail ** self.beta)
     
     def _raw(self, pair: Sequence[str]) -> Dict[str, float]:
         raw={}
@@ -228,6 +223,20 @@ class DecisionAgent:
                 return k
         return k  # numerical precision fallback
     
+    def _tempered_prob(self, p: float) -> float:
+        """
+        Raise-and‐renormalize p to the power alpha:
+        p^(α) = p^α / [p^α + (1-p)^α].
+        """
+        # corner‐cases: if p is exactly 0 or 1, the formula still behaves:
+        if p <= 0.0:
+            return 0.0
+        if p >= 1.0:
+            return 1.0
+        num = p**self.alpha
+        den = num + (1.0 - p)**self.alpha
+        return num / den
+    
     
 if __name__ == "__main__": 
     
@@ -235,18 +244,44 @@ if __name__ == "__main__":
     #  Model parameters
     # ------------------------------------------------------------------
     
+    # cats = {
+    #     "narrow_low": GaussianCategory(mu=0.22, sigma=0.02),
+    #     "wide_low": GaussianCategory(mu=0.22, sigma=0.06),
+    #     "narrow_high": GaussianCategory(mu=0.30, sigma=0.02),
+    #     "wide_high": GaussianCategory(mu=0.30, sigma=0.06),
+    # }
+    # rewards = {
+    #     "narrow_low": (10.0, 1e-6),
+    #     "wide_low": (11.0, 1e-6),
+    #     "narrow_high": (14.0, 1e-6),
+    #     "wide_high": (18.0, 1e-6),
+    # }
+    
     cats = {
         "narrow_low": GaussianCategory(mu=0.22, sigma=0.02),
-        "wide_low": GaussianCategory(mu=0.22, sigma=0.06),
-        "narrow_high": GaussianCategory(mu=0.30, sigma=0.02),
+        #"wide_low": GaussianCategory(mu=0.22, sigma=0.06),
+        # "narrow_high": GaussianCategory(mu=0.30, sigma=0.02),
+        
+        
+        "wide_low": GaussianCategory(mu=-0.5, sigma=0.5),
+        "narrow_high": GaussianCategory(mu=0.5, sigma=0.5),
+        
+        
         "wide_high": GaussianCategory(mu=0.30, sigma=0.06),
     }
+    # rewards = {
+    #     "narrow_low": (10.0, 1e-6),
+    #     "wide_low": (11.0, 1e-6),
+    #     "narrow_high": (14.0, 1e-6),
+    #     "wide_high": (18.0, 1e-6),
+    # }
     rewards = {
-        "narrow_low": (10.0, 1e-6),
-        "wide_low": (11.0, 1e-6),
-        "narrow_high": (14.0, 1e-6),
-        "wide_high": (18.0, 1e-6),
+        "narrow_low": (4.0, 1e-6),
+        "wide_low": (2.0, 1e-6),
+        "narrow_high": (4.0, 1e-6),
+        "wide_high": (40.0, 1e-6),
     }
+
 
 
     
@@ -257,7 +292,7 @@ if __name__ == "__main__":
     #  Agents
     # ------------------------------------------------------------------
 
-    agent_det = DecisionAgent(cats, rewards, threshold=0.28, beta=10, soft=False, verbose=True)
+    agent_det = DecisionAgent(cats, rewards, threshold=0., beta=10, alpha=10, soft=False, verbose=True)
     # agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=10, soft=True, verbose=True)
     
     ch_det, conf_det = agent_det.choose(first_pair)

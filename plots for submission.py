@@ -13,14 +13,14 @@ from decision_maker import DecisionAgent,GaussianCategory
 
 
 
-def plot_A():
+def plot_A(cats, rewards):
     # A: plot impact of beta on a pair
-    threshold = .28
+    threshold = -0
     first_pair = ("wide_low", "narrow_high")
     
     ch_det_history=[]
     conf_det_history=[]
-    for beta in np.logspace(-2,1,50):
+    for beta in np.logspace(-2,1.5,50):
     #for beta in [.1]:
         agent_det = DecisionAgent(cats, rewards, model="entropy", threshold=threshold, beta=beta, soft=False, verbose=True)
         
@@ -30,14 +30,18 @@ def plot_A():
     
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
-    ln1=ax1.plot(np.logspace(-2,1,50),ch_det_history, label="Choice (LH axis)", color='k')
-    ln2=ax2.plot(np.logspace(-2,1,50),conf_det_history, label="Confidence (RH axis)", color='r')
+    ln1=ax1.plot(np.logspace(-2,1.5,50),ch_det_history, label="Choice (LH axis)", color='k')
+    ln2=ax2.plot(np.logspace(-2,1.5,50),conf_det_history, label="Confidence (RH axis)", color='r')
     lns=ln1+ln2
     labs = [l.get_label() for l in lns]
-    ax1.legend(lns, labs, loc="upper left")
-    ax1.set_xlabel("Beta")
+    # ax1.legend(lns, labs, loc="upper left")
+    ax1.set_xlabel("β")
     ax1.set_xscale('log')
     ax1.set_ylabel("Choice", color='k')
+    ax1.set_yticklabels(['Left', 'Right', 'Right'])
+
+    ax2.set_yticks([0, 0.5, 1])
+
     ax2.set_ylabel("Confidence", color='r')
     ax1.tick_params(axis='y', colors='k')  
     ax2.tick_params(axis='y', colors='r') 
@@ -45,7 +49,7 @@ def plot_A():
 
 def plot_B():
     # B: plot impact of beta on a pair for 3 confidence measure types
-    threshold = .28
+    threshold = 0
     first_pair = ("wide_low", "narrow_high")
     
     ch_det_history_ent=[]
@@ -99,7 +103,7 @@ def plot_B():
 
 def plot_C():
     # C: plot impact of threshold on a pair
-    beta=.1
+    beta=0
     
     first_pair = ("wide_low", "narrow_high")
     
@@ -137,7 +141,7 @@ def plot_D():
     
     ch_det_history_ent=[]
     conf_det_history_ent=[]
-    for threshold in np.linspace(.1,.5,50):
+    for threshold in np.linspace(.25,.5,50):
         agent_det = DecisionAgent(cats, rewards, model='entropy', threshold=threshold, beta=beta, soft=False, verbose=False)
         # agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=10, soft=True, verbose=True)
         
@@ -147,7 +151,7 @@ def plot_D():
     
     ch_det_history_diff=[]
     conf_det_history_diff=[]
-    for threshold in np.linspace(.1,.5,50):
+    for threshold in np.linspace(.25,.5,50):
         agent_det = DecisionAgent(cats, rewards, model='diff', threshold=threshold, beta=beta, soft=False, verbose=False)
         # agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=10, soft=True, verbose=True)
         
@@ -157,7 +161,7 @@ def plot_D():
     
     ch_det_history_map=[]
     conf_det_history_map=[]
-    for threshold in np.linspace(.1,.5,50):
+    for threshold in np.linspace(.25,.5,50):
         agent_det = DecisionAgent(cats, rewards, model='map', threshold=threshold, beta=beta, soft=False, verbose=False)
         # agent_soft = DecisionAgent(cats, rewards, threshold=0.31, beta=10, soft=True, verbose=True)
         
@@ -186,8 +190,14 @@ def plot_D():
 if __name__ == "__main__":    
     cats = {
         "narrow_low": GaussianCategory(mu=0.22, sigma=0.02),
-        "wide_low": GaussianCategory(mu=0.22, sigma=0.06),
-        "narrow_high": GaussianCategory(mu=0.30, sigma=0.02),
+        #"wide_low": GaussianCategory(mu=0.22, sigma=0.06),
+        # "narrow_high": GaussianCategory(mu=0.30, sigma=0.02),
+        
+        
+        "wide_low": GaussianCategory(mu=-0.5, sigma=0.5),
+        "narrow_high": GaussianCategory(mu=0.5, sigma=0.5),
+        
+        
         "wide_high": GaussianCategory(mu=0.30, sigma=0.06),
     }
     # rewards = {
@@ -197,15 +207,15 @@ if __name__ == "__main__":
     #     "wide_high": (18.0, 1e-6),
     # }
     rewards = {
-        "narrow_low": (10.0, 1e-6),
-        "wide_low": (10.0, 1e-6),
-        "narrow_high": (10.0, 1e-6),
-        "wide_high": (18.0, 1e-6),
+        "narrow_low": (4.0, 1e-6),
+        "wide_low": (2.0, 1e-6),
+        "narrow_high": (4.0, 1e-6),
+        "wide_high": (40.0, 1e-6),
     }
 
-    plot_A()
-    plot_B()
-    plot_C()
-    plot_D()
+    plot_A(cats, rewards)
+    #plot_B()
+    # plot_C()
+    # plot_D()
     
     
