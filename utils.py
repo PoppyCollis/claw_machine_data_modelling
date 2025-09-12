@@ -114,10 +114,12 @@ def plot_success_bernoulli(
 
 def plot_bar_from_probs(
     probs: Dict[str, float],
-    c: float,
+    c: Optional[float] = None,
+    beta: Optional[float] = None,
     ax: Optional[plt.Axes] = None,
     color_map: Optional[Dict[str, str]] = None,
     title: Optional[str] = None,
+    raw: bool = False, 
     alpha: float = 0.35,
     ) -> plt.Axes:
     """
@@ -155,7 +157,17 @@ def plot_bar_from_probs(
 
     ax.set_ylim(0, 1)
     ax.set_ylabel("Probability")
-    ax.set_title(title or f"Reward-weighted probabilities. Confidence={c:.2f}")
+    if raw:
+        default_title = "Raw success probabilities."
+    else:
+        if c is None or beta is None:
+            default_title = "Reward-weighted probabilities."
+        else:
+            default_title = (
+                f"Reward-weighted probabilities. "
+                f"Confidence={c:.2f}. Beta={beta:.2f}"
+            )
+    ax.set_title(title or default_title)
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=15)
 
